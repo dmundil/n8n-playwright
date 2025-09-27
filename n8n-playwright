@@ -1,17 +1,26 @@
-# Debian-basiertes n8n-Image verwenden (apt-get verfügbar)
-FROM n8nio/n8n:latest-debian
+# Aktuelles Debian mit Node 20
+FROM node:20-bookworm
 
-USER root
-# Python + Systemlibs, die Chromium/Playwright benötigen
+# Systemdeps für Playwright/Chromium + Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 \
-    libxrandr2 libxdamage1 libgbm1 libpango-1.0-0 libasound2 fonts-liberation \
+    libxrandr2 libxdamage1 libgbm1 libpango-1.0-0 libasound2 fonts-liberation curl \
  && rm -rf /var/lib/apt/lists/*
 
-# Playwright (Python) + Browser installieren
-RUN pip3 install --no-cache-dir playwright python-dotenv \
- && python3 -m playwright install chromium
+# n8n installieren
+RUN npm install -g n8n
 
-USER node
-# n8n-Daten liegen wie gewohnt unter /home/node/.n8n
+# Playwright (Python) + Browser (systemweit) installieren
+ENV PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright
+RUN pip3 install --no-cache-dir playwright python-dotenv \
+ && python3 -m playwright install --with-deps chromium
+
+# Non-root-User
+RUN useradd -m -s /bin/bash n8nuser || true
+USER n8nuser
+WORKDIR /home/n8nuser
+ENV N8N_USER_FOLDER=/home/n8nuser/.n8n
+
+EXPOSE 5678
+CMD ["n8n"]
