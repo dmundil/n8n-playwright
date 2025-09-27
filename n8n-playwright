@@ -1,22 +1,29 @@
-# Aktuelles Debian mit Node 20
+# Aktuelles Debian + Node 20
 FROM node:20-bookworm
 
 # Systemdeps für Playwright/Chromium + Python
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv \
+    python3 python3-venv python3-pip \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 \
     libxrandr2 libxdamage1 libgbm1 libpango-1.0-0 libasound2 fonts-liberation curl \
  && rm -rf /var/lib/apt/lists/*
 
-# n8n installieren
+# n8n global installieren
 RUN npm install -g n8n
 
-# Playwright (Python) + Browser (systemweit) installieren
-ENV PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright
-RUN pip3 install --no-cache-dir playwright python-dotenv \
- && python3 -m playwright install --with-deps chromium
+# --- VENV einrichten (sauber, kein System-Pip) ---
+RUN python3 -m venv /opt/venv
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+# Wo Playwright die Browser speichert (schreibbar, global nutzbar)
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Non-root-User
+# Python-Pakete + Browser in der venv installieren
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir playwright python-dotenv \
+ && python -m playwright install --with-deps chromium
+
+# Non-root-User für n8n
 RUN useradd -m -s /bin/bash n8nuser || true
 USER n8nuser
 WORKDIR /home/n8nuser
