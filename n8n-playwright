@@ -1,16 +1,17 @@
-FROM docker.n8n.io/n8nio/n8n:latest
+# Debian-basiertes n8n-Image verwenden (apt-get verfügbar)
+FROM n8nio/n8n:latest-debian
 
 USER root
-# System-Abhängigkeiten für Playwright/Chromium (Headless)
+# Python + Systemlibs, die Chromium/Playwright benötigen
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 python3-pip python3-venv \
     libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxkbcommon0 libxcomposite1 \
     libxrandr2 libxdamage1 libgbm1 libpango-1.0-0 libasound2 fonts-liberation \
  && rm -rf /var/lib/apt/lists/*
 
-# Python-Pakete + Browser installieren
-RUN pip3 install --no-cache-dir --upgrade pip playwright python-dotenv \
+# Playwright (Python) + Browser installieren
+RUN pip3 install --no-cache-dir playwright python-dotenv \
  && python3 -m playwright install chromium
 
 USER node
-# n8n speichert Daten standardmäßig unter /home/node/.n8n
+# n8n-Daten liegen wie gewohnt unter /home/node/.n8n
